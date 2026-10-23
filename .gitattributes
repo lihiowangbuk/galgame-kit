@@ -1,0 +1,18 @@
+# 这个文件决定 git 怎么处理换行，避免 Windows 用户和 Linux 用户互相打架。
+* text=auto
+
+# 源码
+*.cs    text diff=csharp
+*.ps1   text eol=crlf
+*.cmd   text eol=crlf
+*.md    text
+*.json  text
+.gitignore text
+LICENSE    text
+
+# 二进制
+*.png   binary
+*.ico   binary
+*.exe   binary
+*.dll   binary
+*.jar   binary

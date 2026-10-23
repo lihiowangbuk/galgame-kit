@@ -1,0 +1,42 @@
+# 编译产物
+dist/
+build/
+*.exe
+*.dll
+*.pdb
+*.obj
+
+# 第三方工具（不随仓库分发）
+7z.exe
+7z.dll
+7zr.exe
+7za.exe
+ssefenc.jar
+jre/
+admin/
+
+# 设置与日志
+galgame-kit.ini
+*.log
+
+# 测试夹具
+_test/
+_isolated/
+_fixture*/
+*.7z.0*
+*.enc
+
+# 编译时由 src/app.config 复制出来的
+*.exe.config
+
+# IDE / 系统
+.vs/
+.idea/
+*.user
+*.suo
+Thumbs.db
+desktop.ini
+
+# 临时
+*.tmp
+~$*
