@@ -85,15 +85,19 @@ namespace GalgameKit.Core
             }
         }
 
-        /// <summary>这个引擎的存档通常在哪。返回 null 表示不知道，别乱写。</summary>
+        /// <summary>
+        /// 这个引擎的存档通常在哪。返回 null 表示不知道，别乱写。
+        /// 注意 Unity 在 LocalLow、Godot 和 Ren'Py 在 Roaming，混为一谈会把人指到空目录。
+        /// </summary>
         public static string SaveHint(GameEngine e, string title)
         {
             switch (e)
             {
                 case GameEngine.Unity:
+                    return @"%USERPROFILE%\AppData\LocalLow\<公司名>\<游戏名>\";
                 case GameEngine.Godot:
                 case GameEngine.Renpy:
-                    return @"%USERPROFILE%\AppData\LocalLow\<公司名>\<游戏名>\";
+                    return @"%USERPROFILE%\AppData\Roaming\<游戏名>\";
                 case GameEngine.RpgMakerVxAce:
                 case GameEngine.RpgMakerXp:
                 case GameEngine.RpgMakerMvMz:
@@ -103,6 +107,59 @@ namespace GalgameKit.Core
                 default:
                     return null;
             }
+        }
+
+        /// <summary>
+        /// 尽量猜出这个引擎真实的存档目录，猜不出返回 null。
+        /// 只在有把握时给答案：宁可不说，也不要指一个不存在的路径。
+        /// </summary>
+        /// <param name="company">Unity 的 app.info 里读到的公司名，其它引擎可传 null。</param>
+        /// <param name="title">游戏名，用来拼目录。</param>
+        public static string GuessSaveDirectory(GameEngine e, string company, string title)
+        {
+            string safe = Sanitize(title);
+            string safeCompany = Sanitize(company);
+
+            string roaming = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            string localLow = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                "AppData", "LocalLow");
+
+            if (e == GameEngine.Unity)
+            {
+                // 标准布局是 LocalLow\<公司>\<游戏>；也见过直接 LocalLow\<游戏> 的。
+                if (safeCompany != null)
+                {
+                    string withCompany = Path.Combine(localLow, safeCompany, safe ?? "");
+                    if (safe != null && Directory.Exists(withCompany)) return withCompany;
+                    if (safe == null && Directory.Exists(Path.Combine(localLow, safeCompany)))
+                        return Path.Combine(localLow, safeCompany);
+                }
+                if (safe != null)
+                {
+                    string flat = Path.Combine(localLow, safe);
+                    if (Directory.Exists(flat)) return flat;
+                }
+                return null;
+            }
+
+            if (e == GameEngine.Godot || e == GameEngine.Renpy)
+            {
+                if (safe == null) return null;
+                string dir = Path.Combine(roaming, safe);
+                return Directory.Exists(dir) ? dir : null;
+            }
+
+            return null;
+        }
+
+        static string Sanitize(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return null;
+            string t = s.Trim();
+            foreach (char c in Path.GetInvalidFileNameChars())
+                t = t.Replace(c.ToString(), "");
+            return t.Length == 0 ? null : t;
         }
     }
 

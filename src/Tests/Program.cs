@@ -208,6 +208,18 @@ namespace GalgameKit.Tests
             Eq("未知", EngineDetector.Name(GameEngine.Unknown), "未知引擎显示「未知」");
             True(EngineDetector.SaveHint(GameEngine.Unity, null) != null, "Unity 有存档提示");
             True(EngineDetector.SaveHint(GameEngine.Unknown, null) == null, "未知引擎不给假提示");
+
+            // 存档位置：Unity 在 LocalLow，Godot / Ren'Py 在 Roaming —— 写错会把用户指到空目录
+            True(EngineDetector.SaveHint(GameEngine.Unity, null).Contains("LocalLow"), "Unity → LocalLow");
+            True(EngineDetector.SaveHint(GameEngine.Godot, null).Contains("Roaming"), "Godot → Roaming");
+            True(EngineDetector.SaveHint(GameEngine.Godot, null).IndexOf("LocalLow") < 0, "Godot 不能是 LocalLow");
+            True(EngineDetector.SaveHint(GameEngine.Renpy, null).Contains("Roaming"), "Ren'Py → Roaming");
+            Eq(null, EngineDetector.SaveHint(GameEngine.Unknown, null), "未知引擎的存档提示是 null");
+
+            // 目录不存在时必须返回 null，绝不返回一个不存在的路径
+            Eq(null, EngineDetector.GuessSaveDirectory(GameEngine.Unity, Guid.NewGuid().ToString(), "NoSuchGame"), "存档目录不存在 → 不给答案");
+            Eq(null, EngineDetector.GuessSaveDirectory(GameEngine.Godot, null, ""), "标题为空 → 不给答案");
+            Eq(null, EngineDetector.GuessSaveDirectory(GameEngine.RpgMakerVxAce, null, "x"), "不认识的引擎 → 不给答案");
         }
 
         static void TestLauncher()

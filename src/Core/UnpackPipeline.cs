@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -390,6 +390,45 @@ namespace GalgameKit.Core
             return true;
         }
 
+        /// <summary>
+        /// 从游戏目录里读出 (公司名, 游戏名)，用于猜存档位置。读不到对应项就是 null。
+        /// Unity 的 *_Data\app.info 前两行就是公司名和游戏名，比看 exe 文件名准。
+        /// </summary>
+        static void TryReadInfo(string gameDir, out string company, out string title)
+        {
+            company = null;
+            title = null;
+
+            if (string.IsNullOrEmpty(gameDir) || !Directory.Exists(gameDir)) return;
+            try
+            {
+                string[] info = Directory.GetFiles(gameDir, "app.info", SearchOption.AllDirectories);
+                if (info.Length > 0)
+                {
+                    string[] lines = File.ReadAllLines(info[0]);
+                    if (lines.Length >= 1 && lines[0].Trim().Length > 0) company = lines[0].Trim();
+                    if (lines.Length >= 2 && lines[1].Trim().Length > 0) title = lines[1].Trim();
+                    if (title != null) return;
+                }
+            }
+            catch { }
+
+            // 退一步：用最大的 exe 的文件名去掉扩展名当标题。
+            try
+            {
+                string[] exes = Directory.GetFiles(gameDir, "*.exe", SearchOption.TopDirectoryOnly);
+                string best = null;
+                long bestSize = 0;
+                foreach (string x in exes)
+                {
+                    long size = PathHelper.SizeOf(x);
+                    if (size > bestSize) { bestSize = size; best = x; }
+                }
+                if (best != null) title = Path.GetFileNameWithoutExtension(best);
+            }
+            catch { }
+        }
+
         void ReportDirectory(IReporter r, UnpackOutcome outcome, List<string> files)
         {
             long sum = 0;
@@ -409,8 +448,18 @@ namespace GalgameKit.Core
                 outcome.Launcher = launcher;
                 outcome.GameDirectory = Path.GetDirectoryName(launcher);
                 r.Log("  启动：" + launcher);
-                string hint = EngineDetector.SaveHint(e, null);
-                if (hint != null) r.Log("  存档：" + hint);
+
+                // 先看能不能用真实标题猜出已存在的存档目录；猜不到就给通用提示。
+                string company, title;
+                TryReadInfo(Path.GetDirectoryName(launcher), out company, out title);
+                string real = EngineDetector.GuessSaveDirectory(e, company, title);
+                if (real != null)
+                    r.Log("  存档：" + real);
+                else
+                {
+                    string hint = EngineDetector.SaveHint(e, title);
+                    if (hint != null) r.Log("  存档：" + hint);
+                }
             }
             else
             {
