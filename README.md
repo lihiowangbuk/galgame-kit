@@ -98,11 +98,13 @@ if (r.Playable) Process.Start(r.Launcher);
 | 引擎 | 判据 | 存档位置提示 |
 |---|---|---|
 | Unity | `UnityPlayer.dll` | `%USERPROFILE%\AppData\LocalLow\<公司>\<游戏>\` |
-| Godot | `*.pck` / `*.console.exe` / `godot.log` | 同上 |
+| Godot | `*.pck` / `*.console.exe` / `godot.log` | `%USERPROFILE%\AppData\Roaming\<游戏>\` |
 | RPG Maker VX Ace / XP | `RGSS301.dll` / `RGSS202E.dll` | `游戏目录\Save\` |
 | RPG Maker MV/MZ | `nw.dll` / `package.json` | 同上 |
 | KiriKiri | `*.xp3` | `%USERPROFILE%\Documents\<游戏>\` |
 | Ren'Py | `*.rpy` / `*.rpa` | `%USERPROFILE%\AppData\Roaming\<游戏>\` |
+
+上表是"这类引擎通常放哪"。实际跑的时候工具会再往前一步：读 Unity 的 `*_Data\app.info` 拿到**公司名和游戏名**，拼出具体路径，**只有目录确实存在时才报出来**；否则退回上表的通用写法。宁可说"大概在这"，也不给一个打开是空的路径。
 
 ## 分卷完整性校验是怎么做的
 
