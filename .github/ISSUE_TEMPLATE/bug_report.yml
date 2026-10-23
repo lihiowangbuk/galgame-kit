@@ -1,0 +1,89 @@
+name: 报个问题
+description: 打不开、解不出、认错引擎，或者报错看不懂
+title: "[问题] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        先说两件事：**别贴口令**，**别贴下载链接**。
+        下面几项填得越全，回得越快。只要日志的话，图形界面的日志窗口可以全选复制。
+
+  - type: textarea
+    id: what
+    attributes:
+      label: 发生了什么
+      description: 你期望它做什么，实际做了什么。
+      placeholder: 拖进文件夹点开始开箱，进度条走完之后报「缺少工具」，但我 7z.exe 就放在旁边。
+    validations:
+      required: true
+
+  - type: textarea
+    id: dryrun
+    attributes:
+      label: --dry-run 的输出
+      description: |
+        这一项能省掉一半的来回。命令行版跑一遍，不写盘：
+        ```
+        galgame-kit-cli.exe --dry-run "你的目录"
+        ```
+        图形界面的话，日志窗口里前几行「识别结果」也一样。
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: log
+    attributes:
+      label: 完整日志
+      description: 图形界面的日志窗口全选复制；也存在于 `%TEMP%\galgame-kit.log`。
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: headers
+    attributes:
+      label: 文件头（前 8 字节）
+      description: |
+        比说「打不开」有用得多。在文件所在目录跑：
+        ```
+        Format-Hex -Path 'PC.001.enc' | Select-Object -First 1
+        ```
+      placeholder: "53 53 45 46 45 04 09 11"
+      render: text
+    validations:
+      required: false
+
+  - type: input
+    id: version
+    attributes:
+      label: 程序版本
+      description: 图形界面左下角，或者 `galgame-kit-cli.exe --version`。
+      placeholder: v1.0.0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: tools
+    attributes:
+      label: 工具准备好了吗
+      description: 7-Zip 和 ssefenc.jar 是第三方软件，不随本程序分发。
+      multiple: true
+      options:
+        - 有 7z.exe
+        - 有 ssefenc.jar
+        - 有 Java（jre\bin\java.exe 或系统装的）
+        - 只处理普通压缩包，不需要解密
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checked
+    attributes:
+      label: 确认
+      options:
+        - label: 我看过 README 的「已知限制」和 docs/FAQ.md
+          required: true
+        - label: 日志里没有我的口令或私人路径（有的话先删掉再贴）
+          required: true

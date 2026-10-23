@@ -1,5 +1,14 @@
 # 游戏解压助手 · GalgameKit
 
+[![Release](https://img.shields.io/github/v/release/lihiowangbuk/galgame-kit?color=2ea44f)](https://github.com/lihiowangbuk/galgame-kit/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/lihiowangbuk/galgame-kit/total)](https://github.com/lihiowangbuk/galgame-kit/releases)
+[![License](https://img.shields.io/github/license/lihiowangbuk/galgame-kit)](LICENSE)
+[![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-blue)](https://github.com/lihiowangbuk/galgame-kit/releases/latest)
+
+> 直接下载：**[Releases](https://github.com/lihiowangbuk/galgame-kit/releases/latest)** —— 解压即用，不用装 .NET、不用装 Visual Studio。
+
+遇到问题先看 **[常见问题](docs/FAQ.md)** 和 **[开箱流程](docs/开箱流程.md)**；想改代码看 **[参与](CONTRIBUTING.md)**。
+
 把从某些资源站下载的 **`.enc` 加密分卷** 一路变成 **双击就能玩的游戏**：解密 → 合并分卷 → 解压 → 自动认出引擎和启动程序。
 
 Windows / .NET Framework 4.x（系统自带，不用装任何运行时）。图形界面 + 命令行 + 可引用的类库。
@@ -166,7 +175,7 @@ docs/              说明文档与截图
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build.ps1 -Test
 ```
 
-产物落在 `dist\`。`-Clean` 先清空；`-Test` 编完跑冒烟测试 **和** 82 条单元测试；`-NoTests` 跳过测试编译。
+产物落在 `dist\`。`-Clean` 先清空；`-Test` 编完跑冒烟测试 **和** 90 条单元测试；`-NoTests` 跳过测试编译。
 
 单独跑测试：
 
@@ -194,3 +203,14 @@ MIT，见 [LICENSE](LICENSE)。
 
 - 7-Zip — GNU LGPL + unRAR restriction
 - S.S.E. File Encryptor / Paranoia Works — 见其官网授权条款
+
+---
+
+## 参与
+
+- 报问题：带上文件头前 8 字节、完整日志、--dry-run 的输出（[模板](CONTRIBUTING.md)）
+- 提代码：先开 issue，uild.ps1 -Test 全绿再提 PR
+- 加一种容器格式：改 FileSignatures.cs 的魔数表 + UnpackPipeline.RunGroup，补三条测试
+- 加一种引擎：改 EngineDetector.cs 四处 + 补一对测试
+
+改完跑：powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build.ps1 -Test

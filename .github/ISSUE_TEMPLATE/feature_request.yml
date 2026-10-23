@@ -1,0 +1,59 @@
+name: 提个想法
+description: 新的容器格式、新的引擎、界面改进
+title: "[想法] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        这个项目刻意做得很小 —— 只做「解密 → 校验 → 解压 → 认出引擎 → 启动」这一条路。
+        提之前先看一眼 README 的「已知限制」，有些东西是**故意不做**的（Linux、rar 预校验、i18n）。
+
+  - type: textarea
+    id: what
+    attributes:
+      label: 你想要什么
+      placeholder: 希望支持 .lz4 加密包，最近好几个站开始用这个。
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: 现在怎么绕过去的
+      description: 这一栏最能说明需求是真的。如果现在有办法绕过，也说说绕的时候哪里难受。
+    validations:
+      required: true
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: 属于哪一类
+      options:
+        - 新的容器 / 加密格式
+        - 新的游戏引擎
+        - 界面 / 易用性
+        - 命令行 / 可脚本化
+        - 文档
+        - 其他
+    validations:
+      required: true
+
+  - type: textarea
+    id: sample
+    attributes:
+      label: 有没有样本
+      description: |
+        有样本格式说明、公开的规范文档、或者一段能复现的文件头，都贴上来。
+        **不要贴受版权保护的游戏本体**，给文件头前 64 字节足够。
+      render: text
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: 确认
+      options:
+        - label: 我看过 README 的「已知限制」，这个不在「故意不做」的清单里
+          required: true

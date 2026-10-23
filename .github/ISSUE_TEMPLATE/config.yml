@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 常见问题（先看这里）
+    url: https://github.com/lihiowangbuk/galgame-kit/blob/main/docs/FAQ.md
+    about: 打不开、缺工具、口令不对、存档在哪、为什么报毒 —— 一半的问题这里有答案
+  - name: 开箱流程与故障对照表
+    url: https://github.com/lihiowangbuk/galgame-kit/blob/main/docs/开箱流程.md
+    about: 从文件头判断是哪种包，每一层的处理办法，以及九条故障对照
+  - name: 下载最新版
+    url: https://github.com/lihiowangbuk/galgame-kit/releases/latest
+    about: 解压即用，不用装 .NET、不用装 Visual Studio
