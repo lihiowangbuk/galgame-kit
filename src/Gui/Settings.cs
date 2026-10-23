@@ -50,7 +50,7 @@ namespace GalgameKit.Gui
             try
             {
                 StringBuilder sb = new StringBuilder();
-                sb.AppendLine("# 齿轮开箱器设置。删掉这个文件就恢复默认。");
+                sb.AppendLine("# 游戏解压助手设置。删掉这个文件就恢复默认。");
                 sb.AppendLine("KeepIntermediate=" + (KeepIntermediate ? "1" : "0"));
                 File.WriteAllText(PathOf(appDir), sb.ToString(), new UTF8Encoding(false));
             }

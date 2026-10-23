@@ -85,7 +85,7 @@ Write-Host '--- 编译图形界面 ---'
 $guiSrc = @(Get-ChildItem (Join-Path $srcGui '*.cs') | ForEach-Object { $_.FullName }) + $coreSrc
 $guiArgs = @(
     '/target:winexe',
-    ('/out:' + (Join-Path $dist '齿轮开箱器.exe')),
+    ('/out:' + (Join-Path $dist '游戏解压助手.exe')),
     ('/win32icon:' + (Join-Path $assets 'gear.ico')),
     '/r:System.Windows.Forms.dll',
     '/r:System.Drawing.dll'
@@ -114,7 +114,7 @@ if (-not $NoTests) {
 Write-Host '--- 写入 app.config ---'
 $appConfig = Join-Path $root 'src\app.config'
 if (-not (Test-Path $appConfig)) { throw "缺少 $appConfig（长路径开关）" }
-$exeNames = @('齿轮开箱器', 'galgame-kit-cli')
+$exeNames = @('游戏解压助手', 'galgame-kit-cli')
 if (Test-Path $testExe) { $exeNames += 'galgame-kit-tests' }
 foreach ($n in $exeNames) {
     $target = Join-Path $dist ($n + '.exe.config')

@@ -15,7 +15,7 @@ param(
 )
 
 $repo = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
-if (-not $Exe) { $Exe = Join-Path $repo 'dist\齿轮开箱器.exe' }
+if (-not $Exe) { $Exe = Join-Path $repo 'dist\游戏解压助手.exe' }
 if (-not $Out) { $Out = Join-Path $repo 'docs\shot.png' }
 if (-not $Target) { throw '需要一个 -Target 目录（要截哪个界面状态）' }
 if (-not (Test-Path -LiteralPath $Exe)) { throw "找不到 $Exe，先跑 scripts\build.ps1" }

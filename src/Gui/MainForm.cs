@@ -59,7 +59,7 @@ namespace GalgameKit.Gui
             _startupArgs = args ?? new string[0];
             _logFile = Path.Combine(Path.GetTempPath(), "galgame-kit.log");
 
-            Text = "齿轮开箱器 —— .enc 解密 + 解压 + 启动";
+            Text = "游戏解压助手 —— .enc 解密 + 解压 + 启动";
             AutoScaleMode = AutoScaleMode.None;
 
             try
@@ -503,7 +503,7 @@ namespace GalgameKit.Gui
                 Close();
                 return;
             }
-            MessageBox.Show(this, message, "齿轮开箱器", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            MessageBox.Show(this, message, "游戏解压助手", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
 
         void Finish(UnpackOutcome res)

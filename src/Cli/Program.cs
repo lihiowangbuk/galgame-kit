@@ -107,7 +107,7 @@ namespace GalgameKit.Cli
 
         static void Usage()
         {
-            Console.WriteLine("齿轮开箱器 · 命令行版");
+            Console.WriteLine("游戏解压助手 · 命令行版");
             Console.WriteLine();
             Console.WriteLine("  galgame-kit-cli.exe [选项] <目录>");
             Console.WriteLine();

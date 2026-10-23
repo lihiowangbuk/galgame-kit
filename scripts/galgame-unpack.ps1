@@ -233,7 +233,7 @@ function Get-GroupKey([string]$FileName) {
 $AskedPath = $false
 if (-not $Path) {
     $AskedPath = $true
-    Write-Host "`n########## 齿轮开箱器 ##########" -ForegroundColor Cyan
+    Write-Host "`n########## 游戏解压助手 ##########" -ForegroundColor Cyan
     Write-Host "把下载下来的文件夹拖进这个窗口，或者直接粘贴路径。" -ForegroundColor Gray
     Write-Host "（带引号也行，会自动去掉）`n"
     do {
@@ -273,7 +273,7 @@ if (Test-Path -LiteralPath $Path -PathType Container) {
                         Where-Object { $_.Name -like '*_Data' }).Count -gt 0)
     if ($looksPlayable) {
         if (-not $AskedPath) {
-            Write-Host "`n########## 齿轮开箱器 ##########" -ForegroundColor Cyan
+            Write-Host "`n########## 游戏解压助手 ##########" -ForegroundColor Cyan
             Write-Host "输入：$Path"
         }
         Write-Host "`n这是已经解压好的游戏目录，不需要再解包。" -ForegroundColor Green
@@ -293,7 +293,7 @@ $groups = @($all | Group-Object { Get-GroupKey $_.Name })
 if ($AskedPath) {
     Write-Host "输入：$Path"
 } else {
-    Write-Host "`n########## 齿轮开箱器 ##########" -ForegroundColor Cyan
+    Write-Host "`n########## 游戏解压助手 ##########" -ForegroundColor Cyan
     Write-Host "输入：$Path"
 }
 Write-Host "发现 $($groups.Count) 组资源`n"
