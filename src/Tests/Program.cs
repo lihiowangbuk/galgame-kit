@@ -363,12 +363,41 @@ namespace GalgameKit.Tests
                 True(!r2.Success, "路径不存在 → 失败");
                 True(r2.Failures.Count > 0, "路径不存在 → 有失败原因");
 
-                // 缺工具
-                NullReporter rep3 = new NullReporter();
-                UnpackOutcome r3 = new UnpackPipeline(new ToolSet { Root = Path.Combine(dir, "empty") }, new Options())
-                    .Run(dir, rep3);
-                True(!r3.Success, "缺工具 → 失败");
-                True(Join(rep3.Lines).Contains("缺少工具"), "缺工具 → 明确说缺什么");
+                // 缺工具：必须是真要解包时才报缺。
+                // 已解压目录上面那次已经证明过「没工具也能报告目录内容」，这里换成真的加密包。
+                string enc = TempDir("pipe-enc");
+                try
+                {
+                    MakeFile(enc, "PC.001.enc", 4096);
+
+                    NullReporter rep3 = new NullReporter();
+                    UnpackOutcome r3 = new UnpackPipeline(new ToolSet { Root = Path.Combine(dir, "empty") }, new Options())
+                        .Run(enc, rep3);
+                    True(!r3.Success, "缺工具 → 失败");
+                    True(Join(rep3.Lines).Contains("缺少工具"), "缺工具 → 明确说缺什么");
+                    True(Join(rep3.Lines).Contains("ssefenc"), "缺工具 → 指出要 ssefenc.jar");
+
+                    // 体检模式不该被工具缺失挡住：它本来就是用来看缺什么的
+                    NullReporter repDry = new NullReporter();
+                    UnpackOutcome rDry = new UnpackPipeline(new ToolSet { Root = Path.Combine(dir, "empty") },
+                        new Options { DryRun = true }).Run(enc, repDry);
+                    True(rDry.Success, "缺工具 + 体检模式 → 仍然成功");
+                    True(Join(repDry.Lines).Contains("真正开箱时会缺"), "缺工具 + 体检模式 → 提前告知会缺什么");
+
+                    // 只需要解压时不必要求 Java
+                    string plain = TempDir("pipe-7z");
+                    try
+                    {
+                        MakeFile(plain, "pack.7z", 2048);
+                        NullReporter rep7 = new NullReporter();
+                        UnpackOutcome r7 = new UnpackPipeline(new ToolSet { Root = Path.Combine(dir, "empty") }, new Options())
+                            .Run(plain, rep7);
+                        True(!r7.Success, "只有 7z 包 + 没工具 → 失败");
+                        True(!Join(rep7.Lines).Contains("ssefenc"), "只有 7z 包 → 不该要求 ssefenc.jar");
+                    }
+                    finally { Cleanup(plain); }
+                }
+                finally { Cleanup(enc); }
 
                 // 空目录
                 string empty = TempDir("pipe-empty");

@@ -459,13 +459,11 @@ namespace GalgameKit.Gui
             }
 
             ToolSet tools = ToolSet.Locate(AppDir);
-            List<string> missing = tools.Missing();
-            if (missing.Count > 0)
-            {
-                Fail("缺少工具：" + string.Join("、", missing.ToArray()) +
-                     "\n请把它们和本程序放在同一个目录里。");
-                return;
-            }
+
+            // 工具缺失不在这里拦：已经解压好的目录、或者只想看看识别结果，都不需要工具。
+            // 真正的按需体检在 UnpackPipeline 里，它知道这批文件到底需要 7z 还是 java。
+            if (!tools.CanExtract && !tools.CanDecrypt)
+                Log("[提示] 没找到 7z.exe / ssefenc.jar。如果这批文件需要解密或解压，开箱时会报缺件。");
 
             _running = true;
             _launcher = null;

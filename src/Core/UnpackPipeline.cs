@@ -113,15 +113,6 @@ namespace GalgameKit.Core
                 return;
             }
 
-            // ---- 0. 工具体检 ----
-            List<string> missing = _tools.Missing();
-            if (missing.Count > 0)
-            {
-                foreach (string m in missing) Fail(outcome, r, "缺少工具：" + m);
-                r.Log("工具必须和程序放在同一个目录里。当前找的是：" + _tools.Root);
-                return;
-            }
-
             string outRoot = !string.IsNullOrEmpty(_opt.OutputRoot)
                 ? _opt.OutputRoot
                 : Path.Combine(targetDir, "_unpack");
@@ -167,6 +158,39 @@ namespace GalgameKit.Core
                 ReportDirectory(r, outcome, all);
                 outcome.Success = true;
                 return;
+            }
+
+            // ---- 1c. 按需体检工具 ----
+            // 位置刻意放在这里：已经是解压好的目录、或者只是 --dry-run 体检，都不该被工具缺失挡住。
+            // 而且只看这批文件真的需要什么 —— 只放了个普通 7z 包的人不该被要求先装好 Java。
+            bool needDecrypt = false;
+            bool needExtract = false;
+            foreach (string f in files)
+            {
+                ContainerKind kind = FileSignatures.Detect(f);
+                if (kind == ContainerKind.Ssefe) needDecrypt = true;
+                else if (kind == ContainerKind.SevenZip || kind == ContainerKind.Zip || kind == ContainerKind.Rar)
+                    needExtract = true;
+            }
+
+            List<string> missing = new List<string>();
+            if (needExtract && !_tools.CanExtract) missing.Add("7z.exe / 7zr.exe（解压用）");
+            if (needDecrypt && !_tools.CanDecrypt) missing.Add("java.exe 与 ssefenc.jar（解密 .enc 用）");
+
+            if (missing.Count > 0)
+            {
+                if (_opt.DryRun)
+                {
+                    // 体检模式就是让人先看缺什么，所以报出来但不中止。
+                    foreach (string m in missing) r.Log("[提示] 真正开箱时会缺：" + m);
+                    r.Log("工具目录：" + _tools.Root);
+                }
+                else
+                {
+                    foreach (string m in missing) Fail(outcome, r, "缺少工具：" + m);
+                    r.Log("工具必须和程序放在同一个目录里。当前找的是：" + _tools.Root);
+                    return;
+                }
             }
 
             // ---- 2. 识别 + 分组 ----
