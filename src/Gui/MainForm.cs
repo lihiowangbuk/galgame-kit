@@ -352,7 +352,7 @@ namespace GalgameKit.Gui
                     System.Version v = Assembly.GetExecutingAssembly().GetName().Version;
                     return "v" + v.Major + "." + v.Minor + "." + v.Build;
                 }
-                catch { return "v1.0.0"; }
+                catch { return "v1.1.0"; }
             }
         }
 

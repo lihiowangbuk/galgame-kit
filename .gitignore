@@ -26,6 +26,10 @@ _fixture*/
 *.7z.0*
 *.enc
 
+# 本地临时物：打包目录、发布产物、token 中转文件等，一律不上传
+/_*/
+/_*
+
 # 编译时由 src/app.config 复制出来的
 *.exe.config
 

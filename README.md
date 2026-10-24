@@ -7,7 +7,7 @@
 
 > 直接下载：**[Releases](https://github.com/lihiowangbuk/galgame-kit/releases/latest)** —— 解压即用，不用装 .NET、不用装 Visual Studio。
 
-遇到问题先看 **[常见问题](docs/FAQ.md)** 和 **[开箱流程](docs/开箱流程.md)**；想改代码看 **[参与](CONTRIBUTING.md)**。
+遇到问题先看 **[常见问题](docs/FAQ.md)** 和 **[开箱流程](docs/开箱流程.md)**；想改代码看 **[参与](CONTRIBUTING.md)**；版本改动看 **[更新记录](CHANGELOG.md)**。
 
 把从某些资源站下载的 **`.enc` 加密分卷** 一路变成 **双击就能玩的游戏**：解密 → 合并分卷 → 解压 → 自动认出引擎和启动程序。
 
@@ -178,7 +178,7 @@ docs/              说明文档与截图
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build.ps1 -Test
 ```
 
-产物落在 `dist\`。`-Clean` 先清空；`-Test` 编完跑冒烟测试 **和** 90 条单元测试；`-NoTests` 跳过测试编译。
+产物落在 `dist\`。`-Clean` 先清空；`-Test` 编完跑冒烟测试 **和** 108 条单元测试；`-NoTests` 跳过测试编译。
 
 单独跑测试：
 
