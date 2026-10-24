@@ -9,7 +9,7 @@
 
 这个包是 `.enc`（SSEFE 加密容器），必须先解密才能解压。默认程序不做这段，要你把三个第三方东西放进来：
 
-1. **7-Zip** — <https://www.7-zip.org/download.html>，取 `7z.exe` + `7z.dll`
+1. **7-Zip** — <https://www.7-zip.org/download.html>，取 `7z.exe` + `7z.dll`（tar / zip / rar / gz / bz2 / xz / zst 都要它，`7zr.exe` 只会 .7z）
 2. **S.S.E. File Encryptor** — <https://paranoiaworks.mobi/download/>，取 `ssefenc.jar`
 3. **Java 11+** — 没装的话，同一页面下 `Paranoia File & Text Encryption` 安装包自带运行时，
    装完从安装目录取出 `runtime\bin\java.exe`
@@ -74,6 +74,19 @@ Windows 的经典路径上限是 260 字符，超过之后 `Directory.GetFiles` 
 
 能解，但**不能预校验分卷完整性**。rar 的文件头里没有等价字段，只能解了才知道缺不缺。
 7z 分卷能精确到「缺多少字节」，这是 7z 格式本身的优势。
+
+## 除了 .enc / 7z，还认什么
+
+认得出并会解：`zip`、`rar`、`tar`、`gzip`、`bzip2`、`xz`、`zstd`、`lz4`。
+`.tar.gz` / `.tar.xz` / `.tar.zst` 这类两层结构会连着剥：先解外层拿到 `.tar`，再解 tar 拿到游戏目录，日志里两步都写。
+
+只识别、不代解：`.xp3`（KiriKiri）、`.unity3d` / `UnityFS`（Unity 资源包）、`.cpk`（CRI）、NEKOPACK。
+这些是引擎自己的资源容器，里面的东西不是「文件」而是游戏内部资源，解出来也用不了 —— 直接进游戏跑就行。
+
+## 能把 7z 转成 zip 吗 / 能重新打包吗
+
+不能，这个工具**只解不压**。它是"把下载到的东西变成能双击的东西"，不是压缩包管理器。
+要转格式就用 [7-Zip](https://www.7-zip.org/) 本体，右键「转换」或命令行 `7z a -tzip out.zip src`。
 
 ## 为什么不用 Python / Node 写
 

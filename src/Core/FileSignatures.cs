@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 
 namespace GalgameKit.Core
 {
@@ -12,6 +13,7 @@ namespace GalgameKit.Core
         SevenZip,
         Zip,
         Rar,
+        Tar,          // 未压缩的 tar（魔数在偏移 257）
         KiriKiri,     // .xp3
         UnityAsset,   // UnityFS
         CriCpk,       // CRIWARE .cpk
@@ -21,6 +23,7 @@ namespace GalgameKit.Core
         Bzip2,
         Xz,
         Lz4,
+        Zstd,         // .zst
         Plain         // 没有魔数，靠扩展名兜底为「未知」
     }
 
@@ -28,12 +31,18 @@ namespace GalgameKit.Core
     {
         public readonly byte[] Magic;
         public readonly ContainerKind Kind;
-        public Signature(byte[] magic, ContainerKind kind) { Magic = magic; Kind = kind; }
+        /// <summary>魔数在文件里的偏移。tar 的 "ustar" 在 257。</summary>
+        public readonly int Offset;
+        public Signature(byte[] magic, ContainerKind kind) : this(magic, kind, 0) { }
+        public Signature(byte[] magic, ContainerKind kind, int offset)
+        {
+            Magic = magic; Kind = kind; Offset = offset;
+        }
     }
 
     /// <summary>
     /// 按文件头识别容器。识别失败时按扩展名兜底，再失败返回 Unknown。
-    /// 所有判断都只读前 16 字节，不把整个文件读进内存。
+    /// 只读前 264 字节（tar 的魔数在 257），不把整个文件读进内存。
     /// </summary>
     public static class FileSignatures
     {
@@ -50,10 +59,14 @@ namespace GalgameKit.Core
             new Signature(new byte[] { 0x1F, 0x8B },                                           ContainerKind.Gzip),
             new Signature(new byte[] { 0x42, 0x5A, 0x68 },                                     ContainerKind.Bzip2),
             new Signature(new byte[] { 0xFD, 0x37, 0x7A, 0x58, 0x5A, 0x00 },                   ContainerKind.Xz),
-            new Signature(new byte[] { 0x04, 0x22, 0x4D, 0x18 },                               ContainerKind.Lz4)
+            new Signature(new byte[] { 0x04, 0x22, 0x4D, 0x18 },                               ContainerKind.Lz4),
+            new Signature(new byte[] { 0x28, 0xB5, 0x2F, 0xFD },                               ContainerKind.Zstd),
+            // tar 的 "ustar" 落在第 257 字节。放最后，避免它挡住别的判断。
+            new Signature(Encoding.ASCII.GetBytes("ustar"), ContainerKind.Tar, 257)
         };
 
-        const int HeadBytes = 16;
+        /// <summary>要读多少字节才够判断。tar 的魔数在 257，所以必须读到 262。</summary>
+        const int HeadBytes = 264;
 
         public static byte[] ReadHead(string path, int count)
         {
@@ -68,8 +81,14 @@ namespace GalgameKit.Core
 
         public static bool Matches(byte[] head, byte[] magic)
         {
-            if (head == null || magic == null || head.Length < magic.Length) return false;
-            for (int i = 0; i < magic.Length; i++) if (head[i] != magic[i]) return false;
+            return Matches(head, magic, 0);
+        }
+
+        public static bool Matches(byte[] head, byte[] magic, int offset)
+        {
+            if (head == null || magic == null || offset < 0) return false;
+            if (head.Length < offset + magic.Length) return false;
+            for (int i = 0; i < magic.Length; i++) if (head[offset + i] != magic[i]) return false;
             return true;
         }
 
@@ -82,7 +101,7 @@ namespace GalgameKit.Core
             if (head != null)
             {
                 for (int i = 0; i < Table.Length; i++)
-                    if (Matches(head, Table[i].Magic)) return Table[i].Kind;
+                    if (Matches(head, Table[i].Magic, Table[i].Offset)) return Table[i].Kind;
             }
 
             // 不认识的文件头 -> 按扩展名兜底
@@ -96,8 +115,13 @@ namespace GalgameKit.Core
                 case ".7z":  return ContainerKind.SevenZip;
                 case ".zip": return ContainerKind.Zip;
                 case ".rar": return ContainerKind.Rar;
+                case ".tar": return ContainerKind.Tar;
                 case ".gz":  return ContainerKind.Gzip;
+                case ".bz2": return ContainerKind.Bzip2;
                 case ".xz":  return ContainerKind.Xz;
+                case ".lz4": return ContainerKind.Lz4;
+                case ".zst":
+                case ".zstd": return ContainerKind.Zstd;
                 // .enc 但魔数不认识：仍然按加密容器处理 —— 站点偶尔换实现，
                 // 让用户拿到「要口令」的提示，比直接判定 Unknown 然后跳过有用得多。
                 case ".enc": return ContainerKind.Ssefe;
@@ -114,6 +138,7 @@ namespace GalgameKit.Core
                 case ContainerKind.SevenZip:   return "7-Zip";
                 case ContainerKind.Zip:        return "ZIP";
                 case ContainerKind.Rar:        return "RAR";
+                case ContainerKind.Tar:        return "tar";
                 case ContainerKind.KiriKiri:   return "KiriKiri 资源";
                 case ContainerKind.UnityAsset: return "Unity 资源";
                 case ContainerKind.CriCpk:     return "CRI CPK";
@@ -123,13 +148,29 @@ namespace GalgameKit.Core
                 case ContainerKind.Bzip2:      return "bzip2";
                 case ContainerKind.Xz:         return "xz";
                 case ContainerKind.Lz4:        return "lz4";
+                case ContainerKind.Zstd:       return "zstd";
                 default:                       return "未知";
             }
         }
 
+        /// <summary>
+        /// 交给 7z 就能解开的单层压缩包。刻意不含 gzip/bzip2/xz/zstd：
+        /// 那几种只会解出「一个文件」，多半是 .tar 的第一层，需要二次解包
+        /// （见 <see cref="IsSingleStream"/>）。
+        /// </summary>
         public static bool IsArchive(ContainerKind k)
         {
-            return k == ContainerKind.SevenZip || k == ContainerKind.Zip || k == ContainerKind.Rar;
+            return k == ContainerKind.SevenZip || k == ContainerKind.Zip ||
+                   k == ContainerKind.Rar || k == ContainerKind.Tar;
+        }
+
+        /// <summary>
+        /// 单流压缩（gzip/bzip2/xz/zstd/lz4）：解开只得到一个文件，通常还要再解一次。
+        /// </summary>
+        public static bool IsSingleStream(ContainerKind k)
+        {
+            return k == ContainerKind.Gzip || k == ContainerKind.Bzip2 ||
+                   k == ContainerKind.Xz || k == ContainerKind.Zstd || k == ContainerKind.Lz4;
         }
     }
 }

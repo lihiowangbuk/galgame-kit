@@ -165,16 +165,24 @@ namespace GalgameKit.Core
             // 而且只看这批文件真的需要什么 —— 只放了个普通 7z 包的人不该被要求先装好 Java。
             bool needDecrypt = false;
             bool needExtract = false;
+            bool needFull7z = false;
             foreach (string f in files)
             {
                 ContainerKind kind = FileSignatures.Detect(f);
                 if (kind == ContainerKind.Ssefe) needDecrypt = true;
-                else if (kind == ContainerKind.SevenZip || kind == ContainerKind.Zip || kind == ContainerKind.Rar)
+                else if (FileSignatures.IsArchive(kind) || FileSignatures.IsSingleStream(kind))
+                {
                     needExtract = true;
+                    // tar / zip / rar / gz / bz2 / xz / zst / lz4 都只有完整 7z.exe 才认得，
+                    // 精简版 7zr.exe 只会 7z。
+                    if (kind != ContainerKind.SevenZip) needFull7z = true;
+                }
             }
 
             List<string> missing = new List<string>();
             if (needExtract && !_tools.CanExtract) missing.Add("7z.exe / 7zr.exe（解压用）");
+            else if (needFull7z && !File.Exists(_tools.SevenZip))
+                missing.Add("7z.exe（解压 tar / zip / rar / gz 等格式要用完整版，7zr.exe 不认）");
             if (needDecrypt && !_tools.CanDecrypt) missing.Add("java.exe 与 ssefenc.jar（解密 .enc 用）");
 
             if (missing.Count > 0)
@@ -333,11 +341,57 @@ namespace GalgameKit.Core
 
             // ---- 找压缩包 ----
             string arch = PickFirstArchive(current);
+
+            // 单流压缩（.gz / .bz2 / .xz / .zst / .lz4）只会解出「一个文件」，
+            // 通常那个文件才是真正的 tar。先解这一层，再照常往下走。
             if (arch == null)
             {
-                r.Log("  [跳过] 没找到能识别的压缩包。");
-                return false;
+                string stream = PickFirstSingleStream(current);
+                if (stream == null)
+                {
+                    r.Log("  [跳过] 没找到能识别的压缩包。");
+                    return false;
+                }
+
+                ContainerKind sk = FileSignatures.Detect(stream);
+                if (!File.Exists(_tools.SevenZip))
+                {
+                    Fail(outcome, r, "解 " + FileSignatures.Describe(sk) + " 需要完整的 7z.exe（7zr 做不到）。");
+                    return false;
+                }
+
+                string stage = Path.Combine(Path.GetDirectoryName(decDir) ?? decDir, "stage");
+                if (!PathHelper.IsDir(stage))
+                {
+                    try { Directory.CreateDirectory(stage); }
+                    catch (Exception ex) { Fail(outcome, r, "建不了临时目录：" + ex.Message); return false; }
+                }
+
+                r.Log("  " + FileSignatures.Describe(sk) + " 是一层单流压缩，先解这一层…");
+                ProcessResult sr = Extract(stream, stage, r, _tools.SevenZip);
+                if (sr.Cancelled) return false;
+                if (sr.ExitCode != 0)
+                {
+                    Fail(outcome, r, ExplainExtractError(sr));
+                    foreach (string line in sr.Tail) r.Log("    " + line);
+                    return false;
+                }
+
+                current = VolumeGroup.SortNaturally(new List<string>(Directory.GetFiles(stage)));
+                if (current.Count == 0) { Fail(outcome, r, "解出来是空的。"); return false; }
+
+                arch = PickFirstArchive(current);
+                if (arch == null)
+                {
+                    r.Log("  解开后得到 " + current.Count + " 个文件，里面没有压缩包了。");
+                    ReportDirectory(r, outcome, current);
+                    if (outcome.Playable) return true;
+                    Fail(outcome, r, "这一层解开后没有得到能玩的游戏目录。");
+                    return false;
+                }
+                r.Log("  里面是 " + FileSignatures.Describe(FileSignatures.Detect(arch)) + "，继续解。");
             }
+
             ContainerKind ak = FileSignatures.Detect(arch);
             if (!PathHelper.IsDir(gameDir))
             {
@@ -378,7 +432,6 @@ namespace GalgameKit.Core
                 Fail(outcome, r, msg);
                 return false;
             }
-
             r.Log("--- 解压（" + FileSignatures.Describe(ak) + "）到 " + gameDir + " ---");
             r.Status("解压 " + Path.GetFileName(arch) + " …");
             ProcessResult rx = Extract(arch, gameDir, r);
@@ -600,6 +653,14 @@ namespace GalgameKit.Core
             }
             foreach (string f in files)
                 if (FileSignatures.IsArchive(FileSignatures.Detect(f))) return f;
+            return null;
+        }
+
+        /// <summary>单流压缩（gzip / bzip2 / xz / zstd / lz4）的入口文件。</summary>
+        static string PickFirstSingleStream(List<string> files)
+        {
+            foreach (string f in files)
+                if (FileSignatures.IsSingleStream(FileSignatures.Detect(f))) return f;
             return null;
         }
 

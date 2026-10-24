@@ -88,10 +88,44 @@ namespace GalgameKit.Tests
 
                 True(FileSignatures.IsArchive(ContainerKind.SevenZip), "7z 算压缩包");
                 True(FileSignatures.IsArchive(ContainerKind.Zip), "zip 算压缩包");
+                True(FileSignatures.IsArchive(ContainerKind.Tar), "tar 算压缩包");
+                True(!FileSignatures.IsArchive(ContainerKind.Gzip), "gzip 不算压缩包（只是一层单流）");
+                True(!FileSignatures.IsArchive(ContainerKind.Zstd), "zstd 不算压缩包（只是一层单流）");
                 True(!FileSignatures.IsArchive(ContainerKind.Ssefe), "SSEFE 不算压缩包");
                 True(!FileSignatures.IsArchive(ContainerKind.PeImage), "PE 不算压缩包");
 
+                True(FileSignatures.IsSingleStream(ContainerKind.Gzip), "gzip 是单流");
+                True(FileSignatures.IsSingleStream(ContainerKind.Bzip2), "bzip2 是单流");
+                True(FileSignatures.IsSingleStream(ContainerKind.Xz), "xz 是单流");
+                True(FileSignatures.IsSingleStream(ContainerKind.Zstd), "zstd 是单流");
+                True(FileSignatures.IsSingleStream(ContainerKind.Lz4), "lz4 是单流");
+                True(!FileSignatures.IsSingleStream(ContainerKind.Tar), "tar 不是单流");
+                True(!FileSignatures.IsSingleStream(ContainerKind.SevenZip), "7z 不是单流");
+
+                // tar 的 "ustar" 在第 257 字节，不是文件开头
+                byte[] tar = new byte[512];
+                byte[] ustar = Encoding.ASCII.GetBytes("ustar");
+                Array.Copy(ustar, 0, tar, 257, ustar.Length);
+                Eq(ContainerKind.Tar, DetectBytes(dir, "k.tar", tar), "tar 的 ustar 在偏移 257 也能认出来");
+
+                // 同样的字节放在开头不该被当成 tar
+                byte[] fake = new byte[512];
+                Array.Copy(ustar, 0, fake, 0, ustar.Length);
+                True(FileSignatures.Detect(Save(dir, "l.bin", fake)) != ContainerKind.Tar,
+                     "ustar 出现在开头不算 tar（偏移要对）");
+
+                Eq(ContainerKind.Zstd, DetectBytes(dir, "m.zst",
+                     new byte[] { 0x28, 0xB5, 0x2F, 0xFD, 0x00, 0x00 }), "zstd 魔数");
+                Eq(ContainerKind.Gzip, DetectBytes(dir, "n.tgz",
+                     new byte[] { 0x1F, 0x8B, 0x08, 0x00 }), "gzip 魔数（.tgz 也认）");
+                Eq(ContainerKind.Bzip2, DetectBytes(dir, "o.bz2",
+                     new byte[] { 0x42, 0x5A, 0x68, 0x39 }), "bzip2 魔数");
+                Eq(ContainerKind.Xz, DetectBytes(dir, "p.tar.xz",
+                     new byte[] { 0xFD, 0x37, 0x7A, 0x58, 0x5A, 0x00 }), "xz 魔数");
+
                 Eq("加密容器（要口令）", FileSignatures.Describe(ContainerKind.Ssefe), "SSEFE 的中文描述");
+                Eq("tar", FileSignatures.Describe(ContainerKind.Tar), "tar 的中文描述");
+                Eq("zstd", FileSignatures.Describe(ContainerKind.Zstd), "zstd 的中文描述");
             }
             finally { Cleanup(dir); }
         }
@@ -429,9 +463,14 @@ namespace GalgameKit.Tests
 
         static ContainerKind DetectBytes(string dir, string name, byte[] head)
         {
+            return FileSignatures.Detect(Save(dir, name, head));
+        }
+
+        static string Save(string dir, string name, byte[] head)
+        {
             string p = Path.Combine(dir, name);
             File.WriteAllBytes(p, head);
-            return FileSignatures.Detect(p);
+            return p;
         }
 
         static string MakeFile(string dir, string name, int bytes)

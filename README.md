@@ -101,8 +101,11 @@ if (r.Playable) Process.Start(r.Launcher);
 |---|---|---|
 | `.enc`（SSEFE） | 8 字节魔数 `SSEFE` + 版本 | Paranoia Works 系加密容器，需要口令 |
 | 7-Zip 分卷 | `.7z` 主头 + `.001/.002/…` 命名 | 能**在解压前**精确校验分卷是否齐全 |
-| ZIP / RAR | 魔数 | 走 7z.exe |
+| ZIP / RAR / tar | 魔数（tar 的 `ustar` 在偏移 257） | 走 7z.exe |
+| gzip / bzip2 / xz / zstd / lz4 | 魔数 | 认得出，会自动往下解一层（常见于 `.tar.gz` / `.tar.xz` 这类两层结构） |
 | XP3 / UnityFS / CPK / NEKOPACK | 魔数 | 只做识别与提示，不代解 |
+
+`.tar.gz` 这种两层结构会被连着剥开：先解 gzip 拿到 `.tar`，再解 tar 拿到游戏目录，日志里两步都会写出来。
 
 | 引擎 | 判据 | 存档位置提示 |
 |---|---|---|
@@ -189,8 +192,9 @@ dist\galgame-kit-tests.exe VolumeGroup :: 只跑名字含 VolumeGroup 的
 ## 已知限制
 
 - 只做 Windows。核心逻辑本身是纯 .NET，但启动器挑选、路径习惯都是 Windows 的。
-- `7zr.exe` 不支持 zip/rar，缺 `7z.exe` 时只能处理 .7z。
+- `7zr.exe` 不支持 zip/rar/tar/gz，缺 `7z.exe` 时只能处理 .7z。
 - ZIP / RAR 分卷无法预校验，只能解压后发现。
+- **只解包，不做格式转换**：不会把 7z 转成 zip、不会重新打包、不会压回去。需要转格式请直接用 7-Zip。
 - 引擎识别是**启发式**的，认不出来会如实说"未知"而不是瞎猜。
 - 不处理压缩包自带的第二层密码（`.enc` 的口令和 zip 密码不是一回事）。
 - 图形界面没有做 i18n，文案是中文写死的。`IReporter` 已经抽出来了，要加多语言主要改 GUI 层。
@@ -209,7 +213,7 @@ MIT，见 [LICENSE](LICENSE)。
 ## 参与
 
 - 报问题：带上文件头前 8 字节、完整日志、--dry-run 的输出（[模板](CONTRIBUTING.md)）
-- 提代码：先开 issue，uild.ps1 -Test 全绿再提 PR
+- 提代码：先开 issue，`scripts\build.ps1 -Test` 全绿再提 PR
 - 加一种容器格式：改 FileSignatures.cs 的魔数表 + UnpackPipeline.RunGroup，补三条测试
 - 加一种引擎：改 EngineDetector.cs 四处 + 补一对测试
 
